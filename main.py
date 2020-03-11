@@ -8,6 +8,30 @@ class PaddleGame:
 	def __init__(self, turtle):
 		
 		self.turtle = turtle
+
+		self.window = self.create_window()
+
+		self.paddle = self.create_paddle()
+
+		self.ball = self.create_ball()
+
+		self.scoreboard = self.create_scoreboard()
+
+		# Add keyboard controls.
+		self.window.listen()
+
+		self.window.onkey(self.move_paddle_left, 'Left')
+
+		self.window.onkey(self.move_paddle_right, 'Right')
+
+		self.window.onkey(self.step, 's')
+
+		# Add ball movement.
+		self.ball.dx = 1
+
+		self.ball.dy = -1
+
+		self.hit, self.miss, self.reward, self.done = 0, 0, 0, 0
 		
 	# Create display.
 	def create_window(self):
@@ -29,15 +53,7 @@ class PaddleGame:
 		# Update screen continuously.
 		while True:
 
-			self.window.update()
-
-			self.ball_collision()
-
-			self.show_scoreboard()
-
-			self.ball.setx(self.ball.xcor() + self.ball.dx)
-
-			self.ball.sety(self.ball.ycor() + self.ball.dy)
+			self.run_frame()
 
 	# Add ball collision.
 	def ball_collision(self):
@@ -69,12 +85,16 @@ class PaddleGame:
 
 			self.miss += 1
 
+			self.reward -= 3
+
 		# Paddle collision.
 		if abs(self.ball.ycor() + 250) < 2 and abs(self.paddle.xcor() - self.ball.xcor()) < 55:
 
 			self.ball.dy *= -1
 
 			self.hit += 1
+
+			self.reward += 3
 		
 	# Create paddle object.
 	def create_paddle(self):
@@ -135,14 +155,14 @@ class PaddleGame:
 		return ball
 
 	# Create movement/ action methods.
-	def move_ball_right(self):
+	def move_paddle_right(self):
 
 		x = self.paddle.xcor()
 
 		if x < 230:
 			self.paddle.setx(x + 25)
 
-	def move_ball_left(self):
+	def move_paddle_left(self):
 	
 		x = self.paddle.xcor()
 
@@ -151,37 +171,57 @@ class PaddleGame:
 
 	def reset(self):
 
-		self.hit, self.miss = 0, 0
+		self.hit, self.miss, self.done = 0, 0, 0
+
+	def step(self, action):
+
+		self.reward, self.done = 0, 0
+
+		# Move left.
+		if action == 0:
+			self.move_paddle_left()
+
+			self.reward = -.1
+
+		# Move right
+		elif action == 2:
+			self.move_paddle_right()
+
+			self.reward = -.1
+
+		self.run_frame()
+
+		# create the state vector
+		state = [self.paddle.xcor(), self.ball.xcor(), self.ball.ycor(), self.ball.dx, self.ball.dy]
+
+		return self.reward, state, self.done
+
+	# Runs the game for one frame.
+	def run_frame(self):
+		
+		self.window.update()
+
+		self.ball_collision()
+
+		self.show_scoreboard()
+
+		self.ball.setx(self.ball.xcor() + self.ball.dx)
+
+		self.ball.sety(self.ball.ycor() + self.ball.dy)
 
 	def play(self):
-
-		self.window = self.create_window()
-
-		self.paddle = self.create_paddle()
-
-		self.ball = self.create_ball()
-
-		self.scoreboard = self.create_scoreboard()
-
-		# Add keyboard controls.
-		self.window.listen()
-
-		self.window.onkey(self.move_ball_left, 'Left')
-
-		self.window.onkey(self.move_ball_right, 'Right')
-
-		# Add ball movement.
-		self.ball.dx = 1
-
-		self.ball.dy = -1
-
-		self.hit, self.miss = 0, 0
 
 		try:
 			self.render_window()
 		except Exception as e:
-			print("Game stopped by user!.")
-		
+
+			if 'invalid command name' in str(e):
+				print("Game stopped by user!. ")
+
+			else:
+				print("Exception: ", e)
+
+# main console
 
 paddleGame = PaddleGame(turtle)
 
